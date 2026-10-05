@@ -10,6 +10,22 @@ corretas, **encapsuladas no domínio** e **comprovadas por testes de comportamen
 
 ## Como executar
 
+### Opção 1: Docker Compose (recomendado)
+
+Pré-requisito: **Docker**. Não é preciso ter Java nem Maven instalados.
+
+```bash
+docker compose up --build
+```
+
+O build da imagem **compila, roda todos os testes e valida a cobertura mínima**. Se algum teste
+falhar, a imagem não é gerada. A imagem final contém apenas o JRE 21 e o jar, e roda com um
+usuário sem privilégios. O Compose inclui um healthcheck.
+
+Se a porta 8080 estiver ocupada: `APP_PORT=8097 docker compose up --build` (a API fica em `localhost:8097`).
+
+### Opção 2: Maven Wrapper
+
 Pré-requisito: **JDK 21**. Não é preciso instalar Maven (o projeto usa o Maven Wrapper) nem banco
 de dados (H2 em memória).
 
@@ -18,21 +34,31 @@ de dados (H2 em memória).
 mvnw.cmd spring-boot:run      # Windows
 ```
 
+Para usar outra porta: `./mvnw spring-boot:run -Dspring-boot.run.arguments=--server.port=8097`
+
+### Endereços
+
 | Recurso      | URL                                                                                            |
 |--------------|------------------------------------------------------------------------------------------------|
 | API          | `http://localhost:8080/coupon`                                                                 |
 | Swagger UI   | `http://localhost:8080/swagger-ui.html`                                                        |
 | Console H2   | `http://localhost:8080/h2-console` (JDBC URL `jdbc:h2:mem:coupondb`, usuário `sa`, sem senha) |
 
-Para usar outra porta: `./mvnw spring-boot:run -Dspring-boot.run.arguments=--server.port=8081`
+> O console H2 só aceita acesso local, então funciona na Opção 2. No Docker ele fica bloqueado de
+> propósito, pois dá acesso de administrador ao banco (um `SHUTDOWN` derrubaria a API).
 
-### Testes
+### Testes e cobertura
 
 ```bash
-./mvnw test
+./mvnw verify
 ```
 
-94 testes: domínio, use cases, integração HTTP + banco, concorrência e regras de arquitetura.
+98 testes: domínio, use cases, integração HTTP + banco, concorrência e regras de arquitetura.
+
+**Cobertura (JaCoCo): 100% de linhas, branches, instruções e métodos.** O build falha se a
+cobertura de linhas ou branches cair abaixo de 80% (o mínimo exigido). O relatório fica em
+`target/site/jacoco/index.html`. Apenas a classe `CouponApiApplication` (o `main` que inicia o
+Spring, sem lógica) fica fora da medição.
 
 ---
 
@@ -169,6 +195,7 @@ Essas regras são **verificadas automaticamente** pelo `ArchitectureTest` (ArchU
 ## Possíveis evoluções
 
 - Unicidade do `code` entre cupons ativos (não exigida no enunciado, por isso não implementada).
-- Banco PostgreSQL via Docker Compose e Testcontainers nos testes de integração.
+- PostgreSQL como serviço no Docker Compose (persistência entre reinícios) e Testcontainers nos
+  testes de integração.
 - Status `INACTIVE` automático para cupons expirados e fluxo de resgate (`redeemed`).
 - Idempotency-Key no POST para evitar cupons duplicados em retentativas.
