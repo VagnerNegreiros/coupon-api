@@ -8,50 +8,86 @@ corretas, **encapsuladas no domínio** e **comprovadas por testes de comportamen
 
 ---
 
-## Como executar
+## Como executar localmente
 
-### Opção 1: Docker Compose (recomendado)
+### Pré-requisitos
 
-Pré-requisito: **Docker**. Não é preciso ter Java nem Maven instalados.
+Você precisa do **Git** e de **uma** das duas opções abaixo:
+
+| Opção | O que instalar | Como conferir |
+|---|---|---|
+| **A) Docker** (recomendada) | [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Docker + Docker Compose v2), **aberto e em execução** | `docker --version` e `docker compose version` |
+| **B) Java** | [JDK 21](https://adoptium.net/temurin/releases/?version=21) com `JAVA_HOME` configurado | `java -version` (deve mostrar 21) |
+
+**Não é preciso instalar:** Maven (o projeto traz o Maven Wrapper, `mvnw`), banco de dados (o H2
+roda em memória, dentro da aplicação) nem nenhuma outra ferramenta.
+
+> Na primeira execução, as dependências são baixadas da internet. Isso leva alguns minutos; as
+> próximas execuções são rápidas.
+
+### 1. Baixar o projeto
+
+```bash
+git clone https://github.com/VagnerNegreiros/coupon-api.git
+cd coupon-api
+```
+
+### 2. Subir a aplicação
+
+**Opção A: Docker** (funciona igual em Windows, Linux e macOS)
 
 ```bash
 docker compose up --build
 ```
 
 O build da imagem **compila, roda todos os testes e valida a cobertura mínima**. Se algum teste
-falhar, a imagem não é gerada. A imagem final contém apenas o JRE 21 e o jar, e roda com um
-usuário sem privilégios. O Compose inclui um healthcheck.
+falhar, a imagem não é gerada. A imagem final contém apenas o JRE 21 e o jar, roda com um usuário
+sem privilégios e tem healthcheck.
 
-Se a porta 8080 estiver ocupada: `APP_PORT=8097 docker compose up --build` (a API fica em `localhost:8097`).
+**Opção B: Java (Maven Wrapper)**
 
-### Opção 2: Maven Wrapper
+| Sistema / terminal | Comando |
+|---|---|
+| Windows (PowerShell ou CMD) | `.\mvnw.cmd spring-boot:run` |
+| Linux, macOS ou Git Bash | `./mvnw spring-boot:run` |
 
-Pré-requisito: **JDK 21**. Não é preciso instalar Maven (o projeto usa o Maven Wrapper) nem banco
-de dados (H2 em memória).
+### 3. Acessar
 
-```bash
-./mvnw spring-boot:run        # Linux/macOS
-mvnw.cmd spring-boot:run      # Windows
-```
-
-Para usar outra porta: `./mvnw spring-boot:run -Dspring-boot.run.arguments=--server.port=8097`
-
-### Endereços
+A aplicação está pronta quando o log mostrar `Started CouponApiApplication`.
 
 | Recurso      | URL                                                                                            |
 |--------------|------------------------------------------------------------------------------------------------|
+| Swagger UI   | http://localhost:8080/swagger-ui.html (para testar pelo navegador)                             |
 | API          | `http://localhost:8080/coupon`                                                                 |
-| Swagger UI   | `http://localhost:8080/swagger-ui.html`                                                        |
 | Console H2   | `http://localhost:8080/h2-console` (JDBC URL `jdbc:h2:mem:coupondb`, usuário `sa`, sem senha) |
 
-> O console H2 só aceita acesso local, então funciona na Opção 2. No Docker ele fica bloqueado de
+> O console H2 só aceita acesso local, então funciona na Opção B. No Docker ele fica bloqueado de
 > propósito, pois dá acesso de administrador ao banco (um `SHUTDOWN` derrubaria a API).
+
+Os dados ficam em memória: **ao reiniciar a aplicação, os cupons cadastrados são apagados**.
+
+### 4. Parar
+
+- **Opção A:** `Ctrl+C` no terminal e depois `docker compose down`
+- **Opção B:** `Ctrl+C` no terminal
+
+### Porta 8080 ocupada?
+
+| Opção | Windows (PowerShell) | Linux, macOS ou Git Bash |
+|---|---|---|
+| A) Docker | `$env:APP_PORT=8097; docker compose up --build` | `APP_PORT=8097 docker compose up --build` |
+| B) Java | `.\mvnw.cmd spring-boot:run "-Dspring-boot.run.arguments=--server.port=8097"` | `./mvnw spring-boot:run -Dspring-boot.run.arguments=--server.port=8097` |
+
+Depois é só trocar `8080` por `8097` nas URLs acima.
 
 ### Testes e cobertura
 
-```bash
-./mvnw verify
-```
+Requer a Opção B (JDK 21):
+
+| Sistema / terminal | Comando |
+|---|---|
+| Windows (PowerShell ou CMD) | `.\mvnw.cmd verify` |
+| Linux, macOS ou Git Bash | `./mvnw verify` |
 
 98 testes: domínio, use cases, integração HTTP + banco, concorrência e regras de arquitetura.
 
