@@ -104,6 +104,31 @@ class CouponTest {
     }
 
     @Nested
+    class Identity {
+
+        @Test
+        void couponsWithTheSameIdAreTheSameCouponEvenWithDifferentState() {
+            Coupon original = validCoupon();
+            Coupon deletedCopy = Coupon.restore(original.getId(), "XYZ789", "outra", BigDecimal.TEN,
+                    TOMORROW, CouponStatus.DELETED, true, true, NOW, NOW, 3L);
+
+            assertThat(original).isEqualTo(original);
+            assertThat(original).isEqualTo(deletedCopy);
+            assertThat(original).hasSameHashCodeAs(deletedCopy);
+        }
+
+        @Test
+        void couponsWithDifferentIdsAreDifferentEvenWithSameData() {
+            Coupon first = validCoupon();
+            Coupon second = validCoupon();
+
+            assertThat(first).isNotEqualTo(second);
+            assertThat(first).isNotEqualTo("ABC123");
+            assertThat(first).isNotEqualTo(null);
+        }
+    }
+
+    @Nested
     class Delete {
 
         @Test

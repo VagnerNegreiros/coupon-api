@@ -14,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -209,18 +210,23 @@ class CouponApiIntegrationTest {
         @Test
         void softDeletesTheCoupon() throws Exception {
             String id = createCoupon("DEL-001");
+            CouponEntity beforeDelete = jpaRepository.findById(UUID.fromString(id)).orElseThrow();
 
             mvc.perform(delete("/coupon/{id}", id))
                     .andExpect(status().isNoContent())
                     .andExpect(content().string(""));
 
             CouponEntity row = jpaRepository.findById(UUID.fromString(id)).orElseThrow();
+            assertThat(row.getId()).isEqualTo(UUID.fromString(id));
             assertThat(row.getStatus()).isEqualTo("DELETED");
-            assertThat(row.getDeletedAt()).isNotNull();
+            assertThat(row.getDeletedAt()).isAfterOrEqualTo(row.getCreatedAt());
             assertThat(row.getCode()).isEqualTo("DEL001");
             assertThat(row.getDescription()).isEqualTo("Cupom de teste");
             assertThat(row.getDiscountValue()).isEqualByComparingTo("0.8");
-            assertThat(row.getExpirationDate()).isNotNull();
+            assertThat(row.getExpirationDate()).isEqualTo(Instant.parse(FUTURE));
+            assertThat(row.isPublished()).isFalse();
+            assertThat(row.isRedeemed()).isFalse();
+            assertThat(row.getCreatedAt()).as("data de cadastro preservada").isEqualTo(beforeDelete.getCreatedAt());
         }
 
         @Test
